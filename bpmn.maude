@@ -51,7 +51,7 @@ endv
 
 fmod FLOW is 
 	protecting ID .
-	protecting TIME .
+	protecting POSRAT-TIME-DOMAIN-WITH-INF .
 
 	sort Flow .
 	op flow : Id Time -> Flow [ctor] .
@@ -77,7 +77,7 @@ endv
 
 mod PROCESS is
 	including CONFIGURATION .
-	including TIME .
+	including POSRAT-TIME-DOMAIN-WITH-INF .
 	protecting ID .
 	protecting SET{Node} .
 	protecting SET{Flow} .
