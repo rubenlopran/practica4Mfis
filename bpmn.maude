@@ -1,0 +1,100 @@
+*** Ruben 
+*** Francisco de P. Arjona Jiménez
+
+load time.maude .
+
+
+fmod ID is 
+	protecting STRING .
+
+	sort Id .
+	op id : String -> Id [ctor] .
+endfm 
+
+view Id from TRIV to ID is	
+	sort Elt to Id .
+endv
+
+fmod NODE is 
+	protecting SET{Id} .
+	protecting STRING .
+	protecting TIME .
+
+	sort Gateway Node .
+	subsort Gateway < Node .
+	
+	op exclusive : -> Gateway [ctor] .
+	op parallel : -> Gateway [ctor] .
+	op start : Id Id -> Node [ctor] .
+	op end : Id Id -> Node [ctor] .
+	op task : Id String Id Id Time Set{Id} -> Node [ctor] .
+	op split : Id Gateway Id Set{Id} -> Node [ctor] .
+	op merge : Id Gateway Set{Id} Id -> Node [ctor] .
+endfm
+
+view Node from TRIV to NODE is	
+	sort Elt to Node .
+endv
+
+
+fmod RESOURCE is 
+	protecting ID .
+
+	sort Resource .
+	op resource : Id Nat Nat -> Resource [ctor] .
+endfm
+
+view Resource from TRIV to RESOURCE is	
+	sort Elt to Resource .
+endv
+
+
+fmod FLOW is 
+	protecting ID .
+	protecting TIME .
+
+	sort Flow .
+	op flow : Id Time -> Flow [ctor] .
+endfm
+
+view Flow from TRIV to FLOW is	
+	sort Elt to Flow .
+endv
+
+
+fmod TOKEN is 
+	protecting ID .
+	protecting TIME .
+
+	sort Token .
+	op token : Id Time -> Token [ctor] .
+endfm
+
+view Token from TRIV to TOKEN is	
+	sort Elt to Token .
+endv
+
+
+mod PROCESS is
+	including CONFIGURATION .
+	including TIME .
+	protecting ID .
+	protecting SET{Node} .
+	protecting SET{Flow} .
+	protecting SET{Token} .
+	protecting SET{Resource} .
+
+	sort Process .
+	subsort Process < Cid .
+
+	op Process : -> Process .
+	op nodes:_ : Set{Node} -> Attribute [gather (&)] .
+    op flows:_ : Set{Flow} -> Attribute [gather (&)] .
+    op tokens:_ : Set{Token} -> Attribute [gather (&)] .
+    op gtime:_ : Time -> Attribute [gather (&)] .
+	op resources:_ : Set{Resource} -> Attribute [gather (&)] .
+endm
+
+mod BPMN-SEM is
+
+endm 
