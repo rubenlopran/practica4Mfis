@@ -51,7 +51,7 @@ endv
 
 fmod FLOW is 
 	protecting ID .
-	protecting POSRAT-TIME-DOMAIN-WITH-INF .
+	protecting TIME .
 
 	sort Flow .
 	op flow : Id Time -> Flow [ctor] .
@@ -177,3 +177,7 @@ mod BPMN-SEM is
 
 
 endm 
+
+
+
+
