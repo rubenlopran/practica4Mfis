@@ -106,7 +106,7 @@ mod BPMN-SEM is
 
 	var name : String .
 	var N M : Nat .
-	vars id1 id2 id3 id4 : Id .
+	vars idNODE idFLOWIN idFLOWOUT idAUX : Id .
 	var O : Oid .
 	var VProcess : Process .
 	var setId : Set{Id} .
@@ -120,61 +120,203 @@ mod BPMN-SEM is
 	--- advance of time over a configuration
 	op delta : Set{Token} Time -> Set{Token} .
 	eq delta(empty, T) = empty .
-	eq delta((token(id1, T'), setToken), T) = (token(id1, T' monus T),delta(setToken, T)) .
+	eq delta((token(idNODE, T'), setToken), T) = (token(idNODE, T' monus T),delta(setToken, T)) .
 
 	--- maximum time elapse (so that no event is lost)
 	op mte : Configuration -> TimeInf .
 	eq mte(none) = INF .
-	eq mte(< O : VProcess | nodes: setNode, flows: setFlow, tokens: empty, Atts >) = INF .
-	---ceq mte(< O : VProcess | nodes: (task(id2, name, id1, id3, T', setId),setNode), flows: (flow(id1, T'), setFlow), tokens: (token(id1, T), setToken), Atts >)
-	---	= minimum(INF, mte(< O : VProcess | nodes: (task(id2, name, id1, id3, T', setId),setNode), flows: (flow(id1, T'), setFlow), tokens: setToken, Atts >)) 
-	---	if isBlockedTask(token(id1, T),< O : VProcess | nodes: (task(id2, name, id1, id3, T', setId),setNode), flows: (flow(id1, T'), setFlow), tokens: (token(id1, T), setToken), Atts >) .
-	eq mte(< O : VProcess | nodes: setNode, flows: setFlow, tokens: (token(id1, T), setToken), Atts >)
-		= minimum(T, mte(< O : VProcess | nodes: setNode, flows: setFlow, tokens: setToken, Atts >)) .
+	eq mte(< O : VProcess | nodes: setNode, 
+							flows: setFlow, 
+							tokens: empty, 
+							Atts >) = INF .
+	
+	ceq mte(< O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId),setNode), 
+							 flows: (flow(idFLOWIN, T'), setFlow), 
+							 tokens: (token(idFLOWIN, T), setToken), 
+							 Atts >)
+		= minimum(INF, mte(< O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId),setNode), 
+											flows: (flow(idFLOWIN, T'), setFlow), 
+											tokens: setToken, 
+											Atts >)) 
+		if isBlockedTask(token(idFLOWIN, T),< O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId),setNode), 
+														flows: (flow(idFLOWIN, T'), setFlow), 
+														tokens: (token(idFLOWIN, T), setToken), 
+														Atts >) .
+
+	ceq mte(< O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT),setNode), 
+							 flows: (flow(idFLOWIN, T''), setFlow), 
+							 tokens: (token(idFLOWIN, 0), setToken), 
+							 Atts >) 
+        = minimum(INF, mte(< O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT),setNode), 
+											flows: (flow(idFLOWIN, T''), setFlow), 
+											tokens: setToken, 
+											Atts >)) 
+        if isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT),setNode), 
+												flows: (flow(idFLOWIN, T''), setFlow), 
+												tokens: (token(idFLOWIN, 0), setToken), 
+												Atts >) .
+	
+	eq mte(< O : VProcess | nodes: setNode, 
+							flows: setFlow, 
+							tokens: (token(idNODE, T), setToken), 
+							Atts >)
+		= minimum(T, mte(< O : VProcess | nodes: setNode, 
+										  flows: setFlow, 
+										  tokens: setToken, 
+										  Atts >)) .
 
 
 	op isBlockedTask : Token Configuration -> Bool .
-    eq isBlockedTask(token(id1, 0), < O : VProcess | nodes: (task(id2, name, id1, id3, T', empty), setNode), resources: setResource,  Atts >) = false .
-    ceq isBlockedTask(token(id1, 0), < O : VProcess | nodes: (task(id2, name, id1, id3, T', (id4, setId)), setNode), resources: (resource(id4, N, M),setResource),  Atts >) = true 
-        if M = 0 .
-    eq isBlockedTask(token(id1, 0), < O : VProcess | nodes: (task(id2, name, id1, id3, T', (id4, setId)), setNode), resources: (resource(id4, N, M),setResource),  Atts >) = 
-        isBlockedTask(token(id1, 0), < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), resources: (resource(id4, N, M),setResource),  Atts >) . 
+    eq isBlockedTask(token(idFLOWIN, 0), < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', empty), setNode), 
+													    resources: setResource,  
+													    Atts >) 
+					= false .
+
+    ceq isBlockedTask(token(idFLOWIN, 0), < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', (idAUX, setId)), setNode), 
+													     resources: (resource(idAUX, N, M),setResource),  
+													     Atts >) 
+					= true if M = 0 .
+
+    eq isBlockedTask(token(idFLOWIN, 0), < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', (idAUX, setId)), setNode), 
+														  resources: (resource(idAUX, N, M),setResource),  
+														  Atts >) 
+        			= isBlockedTask(token(idFLOWIN, 0), < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+														   resources: (resource(idAUX, N, M),setResource),  
+														   Atts >) . 
+
+
+	op isBlockedMerge : Id Configuration -> Bool .
+	eq isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, empty, idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: setToken, 
+											Atts >) 
+					= false .
+
+	eq isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: setToken, 
+											Atts >) 
+					= true .
+
+    eq isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: (token(idFLOWIN, 0), setToken), 
+											Atts >) 
+       				= isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, setId, idFLOWOUT), setNode), 
+														   flows: (flow(idFLOWOUT, T'), setFlow), 
+														   tokens: setToken, 
+														   Atts >) .
 
 
 	op addResource : Set{Id} Set{Resource} -> Set{Resource} .
 	eq addResource(empty, setResource) = setResource . 
-	eq addResource((id1, setId), (resource(id1, N, M),setResource)) = (resource(id1, N, s M), addResource(setId, setResource)) .
+	eq addResource((idNODE, setId), (resource(idNODE, N, M),setResource)) = (resource(idNODE, N, s M), addResource(setId, setResource)) .
 
 
 	op removeResource : Set{Id} Set{Resource} -> Set{Resource} .
 	eq removeResource(empty, setResource) = setResource .
-	eq removeResource((id1, setId), (resource(id1, N, M),setResource)) = (resource(id1, N, sd(M, 1)), removeResource(setId, setResource)) .
+	eq removeResource((idNODE, setId), (resource(idNODE, N, M),setResource)) = (resource(idNODE, N, sd(M, 1)), removeResource(setId, setResource)) .
+
+
+	op addTokens : Set{Id} Set{Flow} -> Set{Token} . 
+    eq addTokens(empty, setFlow) = empty .
+    eq addTokens((idNODE, setId), (flow(idNODE, T),setFlow)) = (token(idNODE, T), addTokens(setId, setFlow)) . 
+    
+    op removeTokens : Set{Id} Set{Token} -> Set{Token} .
+    eq removeTokens(empty, setToken) = setToken .
+    eq removeTokens((idNODE, setId), (token(idNODE, T),setToken)) = removeTokens(setId, setToken) .
+
 
 
 	--- tick rule should not advance time beyond expiration of a timer
 	crl [tick] : < O : VProcess | tokens: setToken, gtime: T, Atts > 
 		=> < O : VProcess | tokens: delta(setToken, T'), gtime: T plus T', Atts > 
-		if T' := mte(< O : VProcess | tokens: setToken, gtime: T, Atts >) /\ 0 < T' . --- /\ T < 100 . 
+		if T' := mte(< O : VProcess | tokens: setToken, gtime: T, Atts >) /\ 0 < T' /\ T < 100 . 
 
-	rl [start] : < O : VProcess | nodes: (start(id1, id2), setNode), flows: (flow(id2, T), setFlow), tokens: (token(id1, 0), setToken), Atts >
-		=> < O : VProcess | nodes: (start(id1, id2), setNode), flows: (flow(id2, T), setFlow), tokens: (token(id2, T), setToken), Atts > .
 
-	crl [flowToTask] : < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), tokens: (token(id1, 0), setToken), resources: setResource, Atts >
-		=> < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), tokens: (token(id2, T'), setToken), resources: removeResource(setId,setResource), Atts > 
-		if not(isBlockedTask(token(id1, 0), < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), tokens: (token(id2, 0), setToken), resources: setResource, Atts >)) .
+	--- para ir navegando, en los tokens ponemos el id y el T, destino->origen
 
-	rl [task] : < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), flows: (flow(id3, T''), setFlow), tokens: (token(id2, 0), setToken), resources: setResource, Atts >
-		=> < O : VProcess | nodes: (task(id2, name, id1, id3, T', setId), setNode), flows: (flow(id3, T''), setFlow), tokens: (token(id3, T''), setToken), resources: addResource(setId, setResource), Atts > .
+	rl [start] : < O : VProcess | nodes: (start(idNODE, idFLOWOUT), setNode), 
+								  flows: (flow(idFLOWOUT, T), setFlow), 
+								  tokens: (token(idNODE, 0), setToken), 
+								  Atts >
+				=> < O : VProcess | nodes: (start(idNODE, idFLOWOUT), setNode), 
+									flows: (flow(idFLOWOUT, T), setFlow), 
+									tokens: (token(idFLOWOUT, T), setToken), 
+									Atts > .
 
-	rl [end] : < O : VProcess | nodes: (end(id2, id1), setNode), flows: (flow(id1, T), setFlow), tokens: (token(id1, 0), setToken), Atts > 
-		=> < O : VProcess | nodes: (end(id2, id1), setNode), flows: (flow(id1, T), setFlow), tokens: setToken, Atts > .
+	crl [flowToTask] : < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+										tokens: (token(idNODE, 0), setToken), 
+										resources: setResource, 
+										Atts >
+					=> < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+										tokens: (token(idNODE, T'), setToken), 
+										resources: removeResource(setId,setResource), 
+										Atts > 
+					if not(isBlockedTask(token(idFLOWIN, 0), < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+																		 tokens: (token(idNODE, 0), setToken), 
+																		 resources: setResource, 
+																		 Atts >)) .
 
-	rl [mergeExclusive] : < O : VProcess | nodes: (merge(id1, exclusive, (id3, setId), id2), setNode), flows: (flow(id2, T'), setFlow), tokens: (token(id3, 0), setToken), Atts >
-		=> < O : VProcess | nodes: (merge(id1, exclusive, (id3, setId), id2), setNode), flows: (flow(id2, T'), setFlow), tokens: (token(id2, T'), setToken), Atts > .
+	rl [task] : < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+								 flows: (flow(idFLOWOUT, T''), setFlow), 
+								 tokens: (token(idNODE, 0), setToken), 
+								 resources: setResource, Atts >
+					=> < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
+										flows: (flow(idFLOWOUT, T''), setFlow), 
+										tokens: (token(idFLOWOUT, T''), setToken), 
+										resources: addResource(setId, setResource), 
+										Atts > .
+
+	rl [end] : < O : VProcess | nodes: (end(idNODE, idFLOWIN), setNode), 
+								flows: (flow(idFLOWIN, T), setFlow), 
+								tokens: (token(idFLOWIN, 0), setToken), 
+								Atts > 
+			=> < O : VProcess | nodes: (end(idNODE, idFLOWIN), setNode), 
+								flows: (flow(idFLOWIN, T), setFlow), 
+								tokens: setToken, 
+								Atts > .
+
+	rl [mergeExclusive] : < O : VProcess |  nodes: (merge(idNODE, exclusive, (idFLOWIN, setId), idFLOWOUT), setNode), 
+							  				flows: (flow(idFLOWIN, T'), setFlow), 
+							  				tokens: (token(idFLOWIN, 0), setToken), 
+							  				Atts >
+						=> < O : VProcess | nodes: (merge(idNODE, exclusive, (idFLOWIN, setId), idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: (token(idFLOWOUT, T'), setToken), 
+											Atts > .
     
-	rl [splitExclusive] : < O : VProcess | nodes: (split(id2, exclusive, id1, (id3, setId)), setNode), flows: (flow(id3, T''), setFlow), tokens: (token(id1, 0), setToken), Atts >
-        => < O : VProcess | nodes: (split(id2, exclusive, id1, (id3, setId)), setNode), flows: (flow(id3, T''), setFlow), tokens: (token(id3, T''), setToken), Atts > .
+	rl [splitExclusive] : < O : VProcess |  nodes: (split(idNODE, exclusive, idFLOWIN, (idFLOWOUT, setId)), setNode), 
+											flows: (flow(idFLOWIN, T''), setFlow), 
+											tokens: (token(idFLOWIN, 0), setToken), 
+											Atts >
+        				=> < O : VProcess | nodes: (split(idNODE, exclusive, idFLOWIN, (idFLOWOUT, setId)), setNode), 
+											flows: (flow(idFLOWOUT, T''), setFlow), 
+											tokens: (token(idFLOWOUT, T''), setToken), 
+											Atts > .
 
+	crl [mergeParallel] : < O : VProcess |  nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
+											flows: (flow(idFLOWIN, T'), setFlow), 
+											tokens: (token(idFLOWIN, 0), setToken), 
+											Atts >
+        				=> < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: (token(idFLOWOUT, T'), removeTokens(setId, setToken)), 
+											Atts > 
+        				if not(isBlockedMerge(idNODE, < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
+																	flows: (flow(idFLOWOUT, T'), setFlow), 
+																	tokens: (token(idFLOWIN, 0), setToken), 
+																	Atts >)) .
+
+	rl [splitParallel] : < O : VProcess |   nodes: (split(idNODE, parallel, idFLOWIN, (idFLOWOUT, setId)), setNode), 
+											flows: (flow(idFLOWIN, T''), setFlow),
+											tokens: (token(idFLOWIN, 0), setToken), 
+											Atts >
+       					=> < O : VProcess | nodes: (split(idNODE, parallel, idFLOWIN, (idFLOWOUT, setId)), setNode), 
+											flows: (flow(idFLOWOUT, T''), setFlow), 
+											tokens: (token(idFLOWOUT, T''), addTokens(setId, setFlow), setToken), 
+											Atts > .
+    
 
 endm 
 
