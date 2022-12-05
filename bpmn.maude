@@ -278,7 +278,7 @@ mod BPMN-SEM is
 								Atts > .
 
 	rl [mergeExclusive] : < O : VProcess |  nodes: (merge(idNODE, exclusive, (idFLOWIN, setId), idFLOWOUT), setNode), 
-							  				flows: (flow(idFLOWIN, T'), setFlow), 
+							  				flows: (flow(idFLOWOUT, T'), setFlow), 
 							  				tokens: (token(idFLOWIN, 0), setToken), 
 							  				Atts >
 						=> < O : VProcess | nodes: (merge(idNODE, exclusive, (idFLOWIN, setId), idFLOWOUT), setNode), 
@@ -287,7 +287,7 @@ mod BPMN-SEM is
 											Atts > .
     
 	rl [splitExclusive] : < O : VProcess |  nodes: (split(idNODE, exclusive, idFLOWIN, (idFLOWOUT, setId)), setNode), 
-											flows: (flow(idFLOWIN, T''), setFlow), 
+											flows: (flow(idFLOWOUT, T''), setFlow), 
 											tokens: (token(idFLOWIN, 0), setToken), 
 											Atts >
         				=> < O : VProcess | nodes: (split(idNODE, exclusive, idFLOWIN, (idFLOWOUT, setId)), setNode), 
@@ -296,7 +296,7 @@ mod BPMN-SEM is
 											Atts > .
 
 	crl [mergeParallel] : < O : VProcess |  nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
-											flows: (flow(idFLOWIN, T'), setFlow), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
 											tokens: (token(idFLOWIN, 0), setToken), 
 											Atts >
         				=> < O : VProcess | nodes: (merge(idNODE, parallel, (idFLOWIN, setId), idFLOWOUT), setNode), 
@@ -309,7 +309,7 @@ mod BPMN-SEM is
 																	Atts >)) .
 
 	rl [splitParallel] : < O : VProcess |   nodes: (split(idNODE, parallel, idFLOWIN, (idFLOWOUT, setId)), setNode), 
-											flows: (flow(idFLOWIN, T''), setFlow),
+											flows: (flow(idFLOWOUT, T''), setFlow),
 											tokens: (token(idFLOWIN, 0), setToken), 
 											Atts >
        					=> < O : VProcess | nodes: (split(idNODE, parallel, idFLOWIN, (idFLOWOUT, setId)), setNode), 
