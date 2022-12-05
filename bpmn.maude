@@ -231,7 +231,7 @@ mod BPMN-SEM is
 	--- tick rule should not advance time beyond expiration of a timer
 	crl [tick] : < O : VProcess | tokens: setToken, gtime: T, Atts > 
 		=> < O : VProcess | tokens: delta(setToken, T'), gtime: T plus T', Atts > 
-		if T' := mte(< O : VProcess | tokens: setToken, gtime: T, Atts >) /\ 0 < T' /\ T < 100 . 
+		if T' := mte(< O : VProcess | tokens: setToken, gtime: T, Atts >) /\ 0 < T' . ---/\ T < 100 . 
 
 
 	--- para ir navegando, en los tokens ponemos el id y el T, destino->origen
@@ -246,7 +246,7 @@ mod BPMN-SEM is
 									Atts > .
 
 	crl [flowToTask] : < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
-										tokens: (token(idNODE, 0), setToken), 
+										tokens: (token(idFLOWIN, 0), setToken), 
 										resources: setResource, 
 										Atts >
 					=> < O : VProcess | nodes: (task(idNODE, name, idFLOWIN, idFLOWOUT, T', setId), setNode), 
