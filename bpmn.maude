@@ -319,19 +319,31 @@ mod BPMN-SEM is
     
 	op allTempAreFinished : Set{Id} Set{Token} -> Bool .
 	eq allTempAreFinished(empty, setToken) = true .
-	ceq allTempAreFinished((id1, setId), (token(id1, T), setToken)) = false if 0 < T .
-	ceq allTempAreFinished((id1, setId), (token(id1, T), setToken)) = allTempAreFinished(setId, setToken) if T = 0 .
+	ceq allTempAreFinished((idFLOWIN, setId), (token(idFLOWIN, T), setToken)) = false if 0 < T .
+	ceq allTempAreFinished((idFLOWIN, setId), (token(idFLOWIN, T), setToken)) = allTempAreFinished(setId, setToken) if T = 0 .
 
 	op crearTokens : Set{Id} Set{Flow} -> Set{Token} .
 	eq crearTokens(empty, setFlow) = empty .
-	eq crearTokens((id1, setId), (flow(id1, T), setFlow)) = (token(id1, T), crearTokens(setId, setFlow)) .
+	eq crearTokens((idFLOWOUT, setId), (flow(idFLOWOUT, T), setFlow)) = (token(idFLOWOUT, T), crearTokens(setId, setFlow)) . ---Aquí los tokens se crean con el id de los flowout, por tanto puede haber repetidos.
 
-	crl [mergeParallel] : < O : VProcess | nodes: (merge(id1, parallel, setId, id2), setNode), flows: (flow(id2, T'), setFlow), tokens: (setToken), Atts >
-		=> < O : VProcess | nodes: (merge(id1, parallel, (id3, setId), id2), setNode), flows: (flow(id2, T'), setFlow), tokens: (token(id2, T'), setToken), Atts >  --- si para todo id en setId, existe un token con temporalidad 0 en setToken
-			if allTempAreFinished(setId, setToken) .
+	crl [mergeParallel] : < O : VProcess | nodes: (merge(idNODE, parallel, setId, idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow),
+	 										tokens: (setToken), 
+											Atts >
+						=> < O : VProcess | nodes: (merge(idNODE, parallel, setId, idFLOWOUT), setNode), 
+											flows: (flow(idFLOWOUT, T'), setFlow), 
+											tokens: (token(idFLOWOUT, T'), setToken), ---Aquí los tokens se crean con el id de los flowout, por tanto puede haber repetidos.
+											Atts >  --- si para todo id en setId, existe un token con temporalidad 0 en setToken
+												if allTempAreFinished(setId, setToken) .
 		
-	rl [splitParallel] : < O : VProcess | nodes: (split(id2, parallel, id1, setId), setNode), flows: (setFlow), tokens: (token(id1, 0), setToken), Atts >
-		=> < O : VProcess | nodes: (split(id2, parallel, id1, setId), setNode), flows: (setFlow), tokens: (crearTokens(setId, setFlow), setToken), Atts > . --- para todo flow en setId hay que crear un token con su retraso
+	rl [splitParallel] : < O : VProcess | nodes: (split(idNODE, parallel, idFLOWIN, setId), setNode), 
+										flows: (setFlow), 
+										tokens: (token(idFLOWIN, 0), setToken), 
+										Atts >
+						=> < O : VProcess | nodes: (split(idNODE, parallel, idFLOWIN, setId), setNode), 
+											flows: (setFlow), 
+											tokens: (crearTokens(setId, setFlow), setToken), 
+											Atts > . --- para todo flow en setId hay que crear un token con su retraso
 
 endm 
 
