@@ -1,0 +1,4 @@
+sload ex-process-3.maude 
+
+search PROCESS =>* < o : Process | tokens: empty, Atts:AttributeSet > .
+search PROCESS =>! C:Configuration .
