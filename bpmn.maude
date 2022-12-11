@@ -116,6 +116,12 @@ mod BPMN-SEM is
 	var Atts : AttributeSet .
 	vars T T' T'' Gtime : Time .
 
+	--- calcula el mayor tiempo entre los tokens seleccionados
+	op auxMaximum : Set{Id} Set{Token} Time -> TimeInf . 
+    eq auxMaximum(empty, tks, T') = T' .
+    eq auxMaximum((idin, ids), (token(idin, T), tks), T') = maximum(T, auxMaximum(ids, tks, T')) .
+    eq auxMaximum(ids, tks, T') = INF [owise] .
+
 	--- advance of time over a configuration
 	op delta : Set{Token} Time -> Set{Token} .
 	eq delta(empty, T) = empty .
@@ -127,82 +133,55 @@ mod BPMN-SEM is
 	op mte : Configuration -> TimeInf .
 	eq mte(none) = INF .
 	eq mte(< O : Process | nodes: nds, 
-							flows: flws, 
-							tokens: empty, 
-							Atts >) = INF .
+						   flows: flws, 
+						   tokens: empty, 
+						   Atts >) = INF .
 	
 	*** Token en la entrada de la task. Task con recursos no disponibles
 	ceq mte(< O : Process | nodes: (task(idnode, name, idin, idout, T', ids),nds), 
-							flows: (flow(idin, T'), flws), 
-							tokens: (token(idin, T), tks), 
+							flows: flws, 
+							tokens: (token(idin, T), tks),
+							resources: rcs, 
 							Atts >)
 		= minimum(INF, mte(< O : Process | nodes: (task(idnode, name, idin, idout, T', ids),nds), 
-										   flows: (flow(idin, T'), flws), 
+										   flows: flws, 
 										   tokens: tks, 
 										   Atts >)) 
-		if resourcesAvailables(token(idin, T),< O : Process | nodes: (task(idnode, name, idin, idout, T', ids),nds), 
-														flows: (flow(idin, T'), flws), 
-														tokens: (token(idin, T), tks), 
-														Atts >) == false .
+		if not resourcesAvailables(ids,rcs) .													
 	
 	*** No es válido el token por el timer > 0
 	ceq mte(< O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout),nds), 
-							flows: (flow(idin, T''), flws), 
+							flows: (flow(idin, T), flws), 
 							tokens: (token(idin, 0), tks), 
 							Atts >) 
-        = minimum(INF, mte(< O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout),nds), 
-											flows: (flow(idin, T''), flws), 
-											tokens: tks, 
-											Atts >)) 
-        if tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout),nds), 
-												flows: (flow(idin, T''), flws), 
-												tokens: (token(idin, 0), tks), 
-												Atts >) == false .
+        = minimum(auxMaximum(ids, tks, T), mte(< O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout),nds), 
+															   flows: flws, 
+															   tokens: tks, 
+															   Atts >)) 
+        if not tokensOnFlowsTime((idnode,ids),(merge(idnode, parallel, (idin, ids), idout),nds), tks)  .
 	
-	eq mte(< O : Process | nodes: nds, flows: flws, tokens: (token(idnode, T), tks), Atts >)
+	eq mte(< O : Process | nodes: nds, flows: flws, tokens: (token(idaux, T), tks), Atts >)
 		= minimum(T, mte(< O : Process | nodes: nds, flows: flws, tokens: tks, Atts >)) [owise].
 
+
 	--- Operador para ver si los recursos de una task están disponibles
-	op resourcesAvailables : Token Configuration -> Bool .
-    eq resourcesAvailables(token(idin, 0), < O : Process | nodes: (task(idnode, name, idin, idout, T', empty), nds), 
-													    resources: rcs,  
-													    Atts >) 
-					= true .
+	op resourcesAvailables : Set{Id} Set{Resource} -> Bool .
+    eq resourcesAvailables(empty, (resource(idaux, N, M), rcs)) = true .
+    eq resourcesAvailables((idaux,ids), (resource(idaux, N, 0), rcs)) = false .
+    eq resourcesAvailables((idaux,ids), (resource(idaux, N, M), rcs)) = resourcesAvailables(ids, rcs) [owise] .
 
-    ceq resourcesAvailables(token(idin, 0), < O : Process | nodes: (task(idnode, name, idin, idout, T', (idaux, ids)), nds), 
-													     resources: (resource(idaux, N, M),rcs),  
-													     Atts >) 
-					= false if M = 0 .
-
-    eq resourcesAvailables(token(idin, 0), < O : Process | nodes: (task(idnode, name, idin, idout, T', (idaux, ids)), nds), 
-														  resources: (resource(idaux, N, M),rcs),  
-														  Atts >) 
-        			= resourcesAvailables(token(idin, 0), < O : Process | nodes: (task(idnode, name, idin, idout, T', ids), nds), 
-														   resources: (resource(idaux, N, M),rcs),  
-														   Atts >) [owise] . 
 
 	--- Operador para ver si en los flujos de entrada hay un token con el tiempo a 0.
-	op tokensOnFlowsTime : Id Configuration -> Bool .
-	eq tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, empty, idout), nds), 
-											flows: (flow(idout, T'), flws), 
-											tokens: tks, 
-											Atts >) 
-					= true .
+	op tokensOnFlowsTime : Set{Id} Set{Node} Set{Token} -> Bool .
+	eq tokensOnFlowsTime((idnode,ids),(merge(idnode, parallel, empty, idout), nds), tks) 
+		= true .
 
-	eq tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout), nds), 
-											flows: (flow(idout, T'), flws), 
-											tokens: tks, 
-											Atts >) 
-					= false .
+	eq tokensOnFlowsTime((idnode,ids),(merge(idnode, parallel, (idin, ids), idout), nds), tks) 
+		= false .
 
-    eq tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout), nds), 
-											flows: (flow(idout, T'), flws), 
-											tokens: (token(idin, 0), tks), 
-											Atts >) 
-       				= tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, ids, idout), nds), 
-														   flows: (flow(idout, T'), flws), 
-														   tokens: tks, 
-														   Atts >) [owise] .
+    eq tokensOnFlowsTime((idnode,ids), (merge(idnode, parallel, (idin, ids), idout), nds),(token(idin, 0), tks)) 
+       	= tokensOnFlowsTime((idnode,ids), (merge(idnode, parallel, ids, idout), nds), tks) [owise] .
+
 
 
 	op addResource : Set{Id} Set{Resource} -> Set{Resource} .
@@ -249,10 +228,7 @@ mod BPMN-SEM is
 									   tokens: (token(idnode, T), tks), 
 									   resources: removeResource(ids,rcs), 
 									   Atts > 
-					if resourcesAvailables(token(idin, 0), < O : Process | nodes: (task(idnode, name, idin, idout, T, ids), nds), 
-																		   tokens: (token(idnode, 0), tks), 
-																		   resources: rcs, 
-																		   Atts >) .
+					if resourcesAvailables(ids,rcs) .
 
 
 	rl [task] : < O : Process | nodes: (task(idnode, name, idin, idout, T, ids), nds), 
@@ -304,10 +280,7 @@ mod BPMN-SEM is
 										   flows: (flow(idout, T), flws), 
 										   tokens: (token(idout, T), removeTokens(ids, tks)), 
 										   Atts > 
-        				if tokensOnFlowsTime(idnode, < O : Process | nodes: (merge(idnode, parallel, (idin, ids), idout), nds), 
-																	 flows: (flow(idout, T), flws), 
-																	 tokens: (token(idin, 0), tks), 
-																	 Atts >) .
+        				if tokensOnFlowsTime((idnode, ids),(merge(idnode, parallel, (idin, ids), idout), nds),(token(idin, 0), tks)) .
 
 
 	rl [splitParallel] : < O : Process |   nodes: (split(idnode, parallel, idin, (idout, ids)), nds), 
