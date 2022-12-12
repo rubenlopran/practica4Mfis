@@ -160,6 +160,7 @@ mod BPMN-SEM is
 															   Atts >)) 
         if not tokensOnFlowsTime((idnode,ids), tks)  .
 	
+	*** Caso general
 	eq mte(< O : Process | nodes: nds, flows: flws, tokens: (token(idaux, T), tks), Atts >)
 		= minimum(T, mte(< O : Process | nodes: nds, flows: flws, tokens: tks, Atts >)) [owise].
 
@@ -182,7 +183,6 @@ mod BPMN-SEM is
 	eq addResource(empty, rcs) = rcs . 
 	eq addResource((idnode, ids), (resource(idnode, N, M),rcs)) = (resource(idnode, N, s M), addResource(ids, rcs)) .
 
-
 	op removeResource : Set{Id} Set{Resource} -> Set{Resource} .
 	eq removeResource(empty, rcs) = rcs .
 	eq removeResource((idnode, ids), (resource(idnode, N, M),rcs)) = (resource(idnode, N, sd(M, 1)), removeResource(ids, rcs)) .
@@ -197,6 +197,8 @@ mod BPMN-SEM is
     eq removeTokens((idnode, ids), (token(idnode, T),tks)) = removeTokens(ids, tks) .
 	eq removeTokens((idnode, ids), tks) = removeTokens(ids, tks) [owise] .
 
+
+	--------------- RLs
 
 	--- tick rule should not advance time beyond expiration of a timer
 	crl [tick] : < O : Process | tokens: tks, gtime: Gtime, Atts > 
